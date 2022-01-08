@@ -1,12 +1,12 @@
 #ifndef TAC_H
 #define TAC_H
 
-#include<assert.h>
-#include<ctype.h>
-#include<stdarg.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<string.h>
+#include<cassert>
+#include<cctype>
+#include<cstdarg>
+#include<cstdio>
+#include<cstdlib>
+#include<cstring>
 
 typedef struct tac_opd tac_opd;
 typedef struct tac_node tac;

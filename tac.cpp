@@ -57,7 +57,7 @@ char** _str_split(char* str, const char delim, int *n) {
     count += last_comma < (str + strlen(str) - 1);
     *n = count;
 
-    result = malloc(sizeof(char*) * (count + 1));
+    result = static_cast<char **>(malloc(sizeof(char *) * (count + 1)));
     if (result) {
         size_t idx  = 0;
         char* token = strtok(str, delims);
@@ -230,16 +230,16 @@ tac *tac_from_buffer(char *buf){
 
 void tac_opd_print(tac_opd *self, FILE *fd){
     switch(self->kind){
-        case OP_LABEL:
+        case tac_opd::OP_LABEL:
             fprintf(fd, "label%d", self->int_val);
             break;
-        case OP_VARIABLE:
+        case tac_opd::OP_VARIABLE:
             fprintf(fd, "%s", self->char_val);
             break;
-        case OP_CONSTANT:
+        case tac_opd::OP_CONSTANT:
             fprintf(fd, "#%d", self->int_val);
             break;
-        case OP_POINTER:
+        case tac_opd::OP_POINTER:
             fprintf(fd, "&%s", self->char_val);
             break;
     }
@@ -247,28 +247,28 @@ void tac_opd_print(tac_opd *self, FILE *fd){
 
 tac_opd *tac_opd_label(int lval){
     tac_opd *self = (tac_opd*)malloc(sizeof(tac_opd));
-    self->kind = OP_LABEL;
+    self->kind = tac_opd::OP_LABEL;
     self->int_val = lval;
     return self;
 }
 
 tac_opd *tac_opd_variable(char *vname){
     tac_opd *self = (tac_opd*)malloc(sizeof(tac_opd));
-    self->kind = OP_VARIABLE;
+    self->kind = tac_opd::OP_VARIABLE;
     sprintf(self->char_val, "%s", vname);
     return self;
 }
 
 tac_opd *tac_opd_constant(int cval){
     tac_opd *self = (tac_opd*)malloc(sizeof(tac_opd));
-    self->kind = OP_CONSTANT;
+    self->kind = tac_opd::OP_CONSTANT;
     self->int_val = cval;
     return self;
 }
 
 tac_opd *tac_opd_pointer(char *pname){
     tac_opd *self = (tac_opd*)malloc(sizeof(tac_opd));
-    self->kind = OP_POINTER;
+    self->kind = tac_opd::OP_POINTER;
     sprintf(self->char_val, "%s", pname);
     return self;
 }
@@ -277,21 +277,21 @@ void tac_print(tac *head, FILE *fd){
     tac *p = head;
     while(p != NULL){
         switch(p->code.kind){
-            case LABEL:
+            case _tac_inst::LABEL:
                 fprintf(fd, "LABEL ");
                 tac_opd_print(p->code.label.labelno, fd);
                 fprintf(fd, " :\n");
                 break;
-            case FUNCTION:
+            case _tac_inst::FUNCTION:
                 fprintf(fd, "FUNCTION %s :\n", p->code.function.funcname);
                 break;
-            case ASSIGN:
+            case _tac_inst::ASSIGN:
                 tac_opd_print(p->code.assign.left, fd);
                 fprintf(fd, " := ");
                 tac_opd_print(p->code.assign.right, fd);
                 fprintf(fd, "\n");
                 break;
-            case ADD:
+            case _tac_inst::ADD:
                 tac_opd_print(p->code.add.left, fd);
                 fprintf(fd, " := ");
                 tac_opd_print(p->code.add.r1, fd);
@@ -299,7 +299,7 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.add.r2, fd);
                 fprintf(fd, "\n");
                 break;
-            case SUB:
+            case _tac_inst::SUB:
                 tac_opd_print(p->code.sub.left, fd);
                 fprintf(fd, " := ");
                 tac_opd_print(p->code.sub.r1, fd);
@@ -307,7 +307,7 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.sub.r2, fd);
                 fprintf(fd, "\n");
                 break;
-            case MUL:
+            case _tac_inst::MUL:
                 tac_opd_print(p->code.mul.left, fd);
                 fprintf(fd, " := ");
                 tac_opd_print(p->code.mul.r1, fd);
@@ -315,7 +315,7 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.mul.r2, fd);
                 fprintf(fd, "\n");
                 break;
-            case DIV:
+            case _tac_inst::DIV:
                 tac_opd_print(p->code.div.left, fd);
                 fprintf(fd, " := ");
                 tac_opd_print(p->code.div.r1, fd);
@@ -323,23 +323,23 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.div.r2, fd);
                 fprintf(fd, "\n");
                 break;
-            case ADDR:
+            case _tac_inst::ADDR:
                 fprintf(fd, "%s := &%s\n", p->code.addr.left->char_val, p->code.addr.right->char_val);
                 break;
-            case FETCH:
+            case _tac_inst::FETCH:
                 fprintf(fd, "%s := *%s\n", p->code.fetch.left->char_val, p->code.fetch.raddr->char_val);
                 break;
-            case DEREF:
+            case _tac_inst::DEREF:
                 fprintf(fd, "*%s := ", p->code.deref.laddr->char_val);
                 tac_opd_print(p->code.deref.right, fd);
                 fprintf(fd, "\n");
                 break;
-            case GOTO:
+            case _tac_inst::GOTO:
                 fprintf(fd, "GOTO ");
                 tac_opd_print(p->code.goto_.labelno, fd);
                 fprintf(fd, "\n");
                 break;
-            case IFLT:
+            case _tac_inst::IFLT:
                 fprintf(fd, "IF ");
                 tac_opd_print(p->code.iflt.c1, fd);
                 fprintf(fd, " < ");
@@ -348,7 +348,7 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.iflt.labelno, fd);
                 fprintf(fd, "\n");
                 break;
-            case IFLE:
+            case _tac_inst::IFLE:
                 fprintf(fd, "IF ");
                 tac_opd_print(p->code.ifle.c1, fd);
                 fprintf(fd, " <= ");
@@ -357,7 +357,7 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.ifle.labelno, fd);
                 fprintf(fd, "\n");
                 break;
-            case IFGT:
+            case _tac_inst::IFGT:
                 fprintf(fd, "IF ");
                 tac_opd_print(p->code.ifgt.c1, fd);
                 fprintf(fd, " > ");
@@ -366,7 +366,7 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.ifgt.labelno, fd);
                 fprintf(fd, "\n");
                 break;
-            case IFGE:
+            case _tac_inst::IFGE:
                 fprintf(fd, "IF ");
                 tac_opd_print(p->code.ifge.c1, fd);
                 fprintf(fd, " >= ");
@@ -375,7 +375,7 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.ifge.labelno, fd);
                 fprintf(fd, "\n");
                 break;
-            case IFNE:
+            case _tac_inst::IFNE:
                 fprintf(fd, "IF ");
                 tac_opd_print(p->code.ifne.c1, fd);
                 fprintf(fd, " != ");
@@ -384,7 +384,7 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.ifne.labelno, fd);
                 fprintf(fd, "\n");
                 break;
-            case IFEQ:
+            case _tac_inst::IFEQ:
                 fprintf(fd, "IF ");
                 tac_opd_print(p->code.ifeq.c1, fd);
                 fprintf(fd, " == ");
@@ -393,41 +393,41 @@ void tac_print(tac *head, FILE *fd){
                 tac_opd_print(p->code.ifeq.labelno, fd);
                 fprintf(fd, "\n");
                 break;
-            case RETURN:
+            case _tac_inst::RETURN:
                 fprintf(fd, "RETURN ");
                 tac_opd_print(p->code.return_.var, fd);
                 fprintf(fd, "\n");
                 break;
-            case DEC:
-                assert(p->code.dec.var->kind == OP_POINTER);
+            case _tac_inst::DEC:
+                assert(p->code.dec.var->kind == tac_opd::OP_POINTER);
                 // DEC should not followed &v
                 fprintf(fd, "DEC %s %d\n", p->code.dec.var->char_val, p->code.dec.size);
                 break;
-            case ARG:
+            case _tac_inst::ARG:
                 fprintf(fd, "ARG ");
                 tac_opd_print(p->code.arg.var, fd);
                 fprintf(fd, "\n");
                 break;
-            case CALL:
+            case _tac_inst::CALL:
                 tac_opd_print(p->code.call.ret, fd);
                 fprintf(fd, " := CALL %s\n", p->code.call.funcname);
                 break;
-            case PARAM:
+            case _tac_inst::PARAM:
                 fprintf(fd, "PARAM ");
                 tac_opd_print(p->code.param.p, fd);
                 fprintf(fd, "\n");
                 break;
-            case READ:
+            case _tac_inst::READ:
                 fprintf(fd, "READ ");
                 tac_opd_print(p->code.read.p, fd);
                 fprintf(fd, "\n");
                 break;
-            case WRITE:
+            case _tac_inst::WRITE:
                 fprintf(fd, "WRITE ");
                 tac_opd_print(p->code.write.p, fd);
                 fprintf(fd, "\n");
                 break;
-            case NONE:
+            case _tac_inst::NONE:
                 break;
         }
         p = p->next;
@@ -457,7 +457,7 @@ void tac_append(tac *head, tac *seg){
 
 tac *tac_init_label(tac_opd *labelno){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = LABEL;
+    self->code.kind =  _tac_inst::LABEL;
     self->code.label.labelno = labelno;
     self->prev = self->next = NULL;
     return self;
@@ -465,7 +465,7 @@ tac *tac_init_label(tac_opd *labelno){
 
 tac *tac_init_function(char *funcname){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = FUNCTION;
+    self->code.kind =  _tac_inst::FUNCTION;
     self->code.function.funcname = (char*)malloc(32);
     sprintf(self->code.function.funcname, "%s", funcname);
     self->prev = self->next = NULL;
@@ -474,7 +474,7 @@ tac *tac_init_function(char *funcname){
 
 tac *tac_init_assign(tac_opd *left, tac_opd *right){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = ASSIGN;
+    self->code.kind =  _tac_inst::ASSIGN;
     self->code.assign.left = left;
     self->code.assign.right = right;
     self->prev = self->next = NULL;
@@ -483,7 +483,7 @@ tac *tac_init_assign(tac_opd *left, tac_opd *right){
 
 tac *tac_init_add(tac_opd *left, tac_opd *r1, tac_opd *r2){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = ADD;
+    self->code.kind =  _tac_inst::ADD;
     self->code.add.left = left;
     self->code.add.r1 = r1;
     self->code.add.r2 = r2;
@@ -493,7 +493,7 @@ tac *tac_init_add(tac_opd *left, tac_opd *r1, tac_opd *r2){
 
 tac *tac_init_sub(tac_opd *left, tac_opd *r1, tac_opd *r2){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = SUB;
+    self->code.kind =  _tac_inst::SUB;
     self->code.sub.left = left;
     self->code.sub.r1 = r1;
     self->code.sub.r2 = r2;
@@ -503,7 +503,7 @@ tac *tac_init_sub(tac_opd *left, tac_opd *r1, tac_opd *r2){
 
 tac *tac_init_mul(tac_opd *left, tac_opd *r1, tac_opd *r2){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = MUL;
+    self->code.kind =  _tac_inst::MUL;
     self->code.mul.left = left;
     self->code.mul.r1 = r1;
     self->code.mul.r2 = r2;
@@ -513,7 +513,7 @@ tac *tac_init_mul(tac_opd *left, tac_opd *r1, tac_opd *r2){
 
 tac *tac_init_div(tac_opd *left, tac_opd *r1, tac_opd *r2){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = DIV;
+    self->code.kind =  _tac_inst::DIV;
     self->code.div.left = left;
     self->code.div.r1 = r1;
     self->code.div.r2 = r2;
@@ -522,9 +522,9 @@ tac *tac_init_div(tac_opd *left, tac_opd *r1, tac_opd *r2){
 }
 
 tac *tac_init_addr(tac_opd *left, tac_opd *right){
-    assert(right->kind == OP_POINTER);
+    assert(right->kind == tac_opd::OP_POINTER);
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = ADDR;
+    self->code.kind =  _tac_inst::ADDR;
     self->code.addr.left = left;
     self->code.addr.right = right;
     self->prev = self->next = NULL;
@@ -533,7 +533,7 @@ tac *tac_init_addr(tac_opd *left, tac_opd *right){
 
 tac *tac_init_fetch(tac_opd *left, tac_opd *raddr){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = FETCH;
+    self->code.kind =  _tac_inst::FETCH;
     self->code.fetch.left = left;
     self->code.fetch.raddr = raddr;
     self->prev = self->next = NULL;
@@ -542,7 +542,7 @@ tac *tac_init_fetch(tac_opd *left, tac_opd *raddr){
 
 tac *tac_init_deref(tac_opd *laddr, tac_opd *right){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = DEREF ;
+    self->code.kind =  _tac_inst::DEREF ;
     self->code.deref.laddr = laddr;
     self->code.deref.right = right;
     self->prev = self->next = NULL;
@@ -551,7 +551,7 @@ tac *tac_init_deref(tac_opd *laddr, tac_opd *right){
 
 tac *tac_init_goto(tac_opd *labelno){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = GOTO;
+    self->code.kind =  _tac_inst::GOTO;
     self->code.goto_.labelno = labelno;
     self->prev = self->next = NULL;
     return self;
@@ -559,7 +559,7 @@ tac *tac_init_goto(tac_opd *labelno){
 
 tac *tac_init_iflt(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = IFLT;
+    self->code.kind =  _tac_inst::IFLT;
     self->code.iflt.c1 = c1;
     self->code.iflt.c2 = c2;
     self->code.iflt.labelno = labelno;
@@ -569,7 +569,7 @@ tac *tac_init_iflt(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
 
 tac *tac_init_ifle(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = IFLE;
+    self->code.kind =  _tac_inst::IFLE;
     self->code.ifle.c1 = c1;
     self->code.ifle.c2 = c2;
     self->code.ifle.labelno = labelno;
@@ -579,7 +579,7 @@ tac *tac_init_ifle(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
 
 tac *tac_init_ifgt(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = IFGT;
+    self->code.kind =  _tac_inst::IFGT;
     self->code.ifgt.c1 = c1;
     self->code.ifgt.c2 = c2;
     self->code.ifgt.labelno = labelno;
@@ -589,7 +589,7 @@ tac *tac_init_ifgt(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
 
 tac *tac_init_ifge(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = IFGE;
+    self->code.kind =  _tac_inst::IFGE;
     self->code.ifge.c1 = c1;
     self->code.ifge.c2 = c2;
     self->code.ifge.labelno = labelno;
@@ -599,7 +599,7 @@ tac *tac_init_ifge(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
 
 tac *tac_init_ifne(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = IFNE;
+    self->code.kind =  _tac_inst::IFNE;
     self->code.ifne.c1 = c1;
     self->code.ifne.c2 = c2;
     self->code.ifne.labelno = labelno;
@@ -609,7 +609,7 @@ tac *tac_init_ifne(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
 
 tac *tac_init_ifeq(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = IFEQ;
+    self->code.kind =  _tac_inst::IFEQ;
     self->code.ifeq.c1 = c1;
     self->code.ifeq.c2 = c2;
     self->code.ifeq.labelno = labelno;
@@ -619,7 +619,7 @@ tac *tac_init_ifeq(tac_opd *c1, tac_opd *c2, tac_opd *labelno){
 
 tac *tac_init_return(tac_opd *var){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = RETURN;
+    self->code.kind =  _tac_inst::RETURN;
     self->code.return_.var = var;
     self->prev = self->next = NULL;
     return self;
@@ -627,7 +627,7 @@ tac *tac_init_return(tac_opd *var){
 
 tac *tac_init_dec(tac_opd *var, int size){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = DEC;
+    self->code.kind =  _tac_inst::DEC;
     self->code.dec.var = var;
     self->code.dec.size = size;
     self->prev = self->next = NULL;
@@ -636,7 +636,7 @@ tac *tac_init_dec(tac_opd *var, int size){
 
 tac *tac_init_arg(tac_opd *var){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = ARG;
+    self->code.kind =  _tac_inst::ARG;
     self->code.arg.var = var;
     self->prev = self->next = NULL;
     return self;
@@ -644,7 +644,7 @@ tac *tac_init_arg(tac_opd *var){
 
 tac *tac_init_call(tac_opd *ret, char *funcname){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = CALL;
+    self->code.kind =  _tac_inst::CALL;
     self->code.call.ret = ret;
     self->code.call.funcname = (char*)malloc(32);
     sprintf(self->code.call.funcname, "%s", funcname);
@@ -654,7 +654,7 @@ tac *tac_init_call(tac_opd *ret, char *funcname){
 
 tac *tac_init_param(tac_opd *p){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = PARAM;
+    self->code.kind =  _tac_inst::PARAM;
     self->code.param.p = p;
     self->prev = self->next = NULL;
     return self;
@@ -662,7 +662,7 @@ tac *tac_init_param(tac_opd *p){
 
 tac *tac_init_read(tac_opd *p){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = READ;
+    self->code.kind =  _tac_inst::READ;
     self->code.read.p = p;
     self->prev = self->next = NULL;
     return self;
@@ -670,7 +670,7 @@ tac *tac_init_read(tac_opd *p){
 
 tac *tac_init_write(tac_opd *p){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = WRITE;
+    self->code.kind =  _tac_inst::_tac_inst::WRITE;
     self->code.write.p = p;
     self->prev = self->next = NULL;
     return self;
@@ -678,7 +678,7 @@ tac *tac_init_write(tac_opd *p){
 
 tac *tac_init_none(){
     tac *self = (tac*)malloc(sizeof(tac));
-    self->code.kind = NONE;
+    self->code.kind =  _tac_inst::_tac_inst::NONE;
     self->prev = self->next = NULL;
     return self;
 }

@@ -1,10 +1,12 @@
 CC=gcc
 BIN=bin
-SRC=main.c tac.c mips32.c
+SRC=main.cpp tac.cpp mips32.cpp
 
 splc: clean
 	@mkdir -p $(BIN)
 	$(CC) $(SRC) -o $(BIN)/$@
+all: splc
+
 clean:
 	@rm -rf $(BIN)
 .PHONY: clean

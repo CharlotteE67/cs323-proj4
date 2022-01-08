@@ -4,7 +4,6 @@
 #include "tac.h"
 #define FALSE 0
 #define TRUE 1
-typedef unsigned char bool;
 
 typedef enum {
     zero, at, v0, v1, a0, a1, a2, a3,
@@ -19,7 +18,7 @@ struct RegDesc {    // the register descriptor
     char var[8];
     bool dirty; // value updated but not stored
     /* add other fields as you need */
-} regs[NUM_REGS];
+};
 
 
 struct VarDesc {    // the variable descriptor
@@ -28,7 +27,7 @@ struct VarDesc {    // the variable descriptor
     int offset; // the offset from stack
     /* add other fields as you need */
     struct VarDesc *next;
-} *vars;
+};
 
 
 void mips32_gen(tac *head, FILE *_fd);

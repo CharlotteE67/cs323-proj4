@@ -3,20 +3,22 @@
 /* the output file descriptor, may not be explicitly used */
 FILE *fd;
 
+RegDesc regs[NUM_REGS];
+VarDesc *vars;
+
 #define _tac_kind(tac) (((tac)->code).kind)
 #define _tac_quadruple(tac) (((tac)->code).tac)
 #define _reg_name(reg) regs[reg].name
 
-
 Register get_register(tac_opd *opd){
-    assert(opd->kind == OP_VARIABLE);
+    assert(opd->kind == tac_opd::OP_VARIABLE);
     char *var = opd->char_val;
     /* COMPLETE the register allocation */
     return t0;
 }
 
 Register get_register_w(tac_opd *opd){
-    assert(opd->kind == OP_VARIABLE);
+    assert(opd->kind == tac_opd::OP_VARIABLE);
     char *var = opd->char_val;
     /* COMPLETE the register allocation (for write) */
     return s0;
@@ -48,7 +50,7 @@ void _mips_iprintf(const char *fmt, ...){
 /* PARAM: a pointer to `struct tac_node` instance
    RETURN: the next instruction to be translated */
 tac *emit_label(tac *label){
-    assert(_tac_kind(label) == LABEL);
+    assert(_tac_kind(label) == _tac_inst::LABEL);
     _mips_printf("label%d:", _tac_quadruple(label).labelno->int_val);
     return label->next;
 }
@@ -62,7 +64,7 @@ tac *emit_assign(tac *assign){
     Register x, y;
 
     x = get_register_w(_tac_quadruple(assign).left);
-    if(_tac_quadruple(assign).right->kind == OP_CONSTANT){
+    if(_tac_quadruple(assign).right->kind == tac_opd::OP_CONSTANT){
         _mips_iprintf("li %s, %d", _reg_name(x),
                                    _tac_quadruple(assign).right->int_val);
     }
@@ -77,13 +79,13 @@ tac *emit_add(tac *add){
     Register x, y, z;
 
     x = get_register_w(_tac_quadruple(add).left);
-    if(_tac_quadruple(add).r1->kind == OP_CONSTANT){
+    if(_tac_quadruple(add).r1->kind == tac_opd::OP_CONSTANT){
         y = get_register(_tac_quadruple(add).r2);
         _mips_iprintf("addi %s, %s, %d", _reg_name(x),
                                          _reg_name(y),
                                          _tac_quadruple(add).r1->int_val);
     }
-    else if(_tac_quadruple(add).r2->kind == OP_CONSTANT){
+    else if(_tac_quadruple(add).r2->kind == tac_opd::OP_CONSTANT){
         y = get_register(_tac_quadruple(add).r1);
         _mips_iprintf("addi %s, %s, %d", _reg_name(x),
                                          _reg_name(y),
@@ -103,14 +105,14 @@ tac *emit_sub(tac *sub){
     Register x, y, z;
 
     x = get_register_w(_tac_quadruple(sub).left);
-    if(_tac_quadruple(sub).r1->kind == OP_CONSTANT){
+    if(_tac_quadruple(sub).r1->kind == tac_opd::OP_CONSTANT){
         y = get_register(_tac_quadruple(sub).r2);
         _mips_iprintf("neg %s, %s", _reg_name(y), _reg_name(y));
         _mips_iprintf("addi %s, %s, %d", _reg_name(x),
                                          _reg_name(y),
                                          _tac_quadruple(sub).r1->int_val);
     }
-    else if(_tac_quadruple(sub).r2->kind == OP_CONSTANT){
+    else if(_tac_quadruple(sub).r2->kind == tac_opd::OP_CONSTANT){
         y = get_register(_tac_quadruple(sub).r1);
         _mips_iprintf("addi %s, %s, -%d", _reg_name(x),
                                           _reg_name(y),
@@ -130,13 +132,13 @@ tac *emit_mul(tac *mul){
     Register x, y, z;
 
     x = get_register_w(_tac_quadruple(mul).left);
-    if(_tac_quadruple(mul).r1->kind == OP_CONSTANT){
+    if(_tac_quadruple(mul).r1->kind == tac_opd::OP_CONSTANT){
         y = get_register_w(_tac_quadruple(mul).r1);
         z = get_register(_tac_quadruple(mul).r2);
         _mips_iprintf("lw %s, %d", _reg_name(y),
                                    _tac_quadruple(mul).r1->int_val);
     }
-    else if(_tac_quadruple(mul).r2->kind == OP_CONSTANT){
+    else if(_tac_quadruple(mul).r2->kind == tac_opd::OP_CONSTANT){
         y = get_register(_tac_quadruple(mul).r1);
         z = get_register_w(_tac_quadruple(mul).r2);
         _mips_iprintf("lw %s, %d", _reg_name(z),
@@ -156,13 +158,13 @@ tac *emit_div(tac *div){
     Register x, y, z;
 
     x = get_register_w(_tac_quadruple(div).left);
-    if(_tac_quadruple(div).r1->kind == OP_CONSTANT){
+    if(_tac_quadruple(div).r1->kind == tac_opd::OP_CONSTANT){
         y = get_register_w(_tac_quadruple(div).r1);
         z = get_register(_tac_quadruple(div).r2);
         _mips_iprintf("lw %s, %d", _reg_name(y),
                                    _tac_quadruple(div).r1->int_val);
     }
-    else if(_tac_quadruple(div).r2->kind == OP_CONSTANT){
+    else if(_tac_quadruple(div).r2->kind == tac_opd::OP_CONSTANT){
         y = get_register(_tac_quadruple(div).r1);
         z = get_register_w(_tac_quadruple(div).r2);
         _mips_iprintf("lw %s, %d", _reg_name(z),
@@ -327,21 +329,21 @@ static tac* (*emitter[])(tac*) = {
     emit_read, emit_write
 };
 
-tac *emit_code(tac *head){
-    tac *(*tac_emitter)(tac*);
+void *emit_code(tac *head) {
+    tac *(*tac_emitter)(tac *);
     tac *tac_code = head;
     emit_preamble();
     emit_read_function();
     emit_write_function();
-    while(tac_code != NULL){
-        if(_tac_kind(tac_code) != NONE){
+    while (tac_code != NULL) {
+        if (_tac_kind(tac_code) != _tac_inst::NONE) {
             tac_emitter = emitter[_tac_kind(tac_code)];
             tac_code = tac_emitter(tac_code);
-        }
-        else{
+        } else {
             tac_code = tac_code->next;
         }
     }
+    return nullptr;
 }
 
 /* translate a TAC list into mips32 assembly
