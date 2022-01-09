@@ -1,14 +1,20 @@
 #include "mips32.h"
-
+#include <map>
+#include <string>
 /* the output file descriptor, may not be explicitly used */
+using namespace std;
 FILE *fd;
 
 RegDesc regs[NUM_REGS];
 VarDesc *vars;
 
+map <string,VarDesc> varMap;//variable name -> offset/reg name 
+
 #define _tac_kind(tac) (((tac)->code).kind)
 #define _tac_quadruple(tac) (((tac)->code).tac)
 #define _reg_name(reg) regs[reg].name
+
+
 
 Register get_register(tac_opd *opd){
     assert(opd->kind == tac_opd::OP_VARIABLE);
