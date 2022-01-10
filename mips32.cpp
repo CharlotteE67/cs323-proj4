@@ -12,7 +12,7 @@ VarDesc *vars;
 
 map <string,VarDesc> varMap;//variable name -> offset/reg name 
 int arg_num;
-int offsetCnt = 0;
+int offsetCnt = 1;
 
 #define _tac_kind(tac) (((tac)->code).kind)
 #define _tac_quadruple(tac) (((tac)->code).tac)
@@ -37,11 +37,13 @@ void _mips_iprintf(const char *fmt, ...){
 
 
 Register get_register(tac_opd *opd){
-    assert(opd->kind == tac_opd::OP_VARIABLE);
     string var = opd->char_val;
     /* COMPLETE the register allocation */
     struct VarDesc addr = varMap[var];
 
+    if(addr.reg!=fp){
+        return addr.reg;
+    }
     int regIndex = NUM_REGS;
     for(int i = t0;i<=s0;i++){
         if(regs[i].dirty==FALSE){
@@ -58,7 +60,6 @@ Register get_register(tac_opd *opd){
 }
 
 Register get_register_w(tac_opd *opd){
-    assert(opd->kind == tac_opd::OP_VARIABLE);
     string var = opd->char_val;
     /* COMPLETE the register allocation (for write) */
     int regIndex = NUM_REGS;
@@ -96,14 +97,13 @@ void spill_register(Register reg){
 /* PARAM: a pointer to `struct tac_node` instance
    RETURN: the next instruction to be translated */
 tac *emit_label(tac *label){
-    assert(_tac_kind(label) == _tac_inst::LABEL);
     _mips_printf("label%d:", _tac_quadruple(label).labelno->int_val);
     return label->next;
 }
 
 tac *emit_function(tac *function){
     varMap.clear();
-    offsetCnt = 0;
+    offsetCnt = 1;
     arg_num = 0;
     _mips_printf("%s:", _tac_quadruple(function).funcname);
     _mips_iprintf("move $fp, $sp");
@@ -424,6 +424,8 @@ tac *emit_ifeq(tac *ifeq){
 tac *emit_return(tac *return_){
     /* COMPLETE emit function */
     _mips_iprintf("move $sp, $fp");
+    Register ret = get_register(_tac_quadruple(return_).var);
+    _mips_iprintf("move $v0, %s", _reg_name(ret));
     _mips_iprintf("jr $ra");
     return return_->next;
 }
@@ -498,14 +500,17 @@ tac *emit_read(tac *read){
 }
 
 tac *emit_write(tac *write){
-    Register x = get_register_w(_tac_quadruple(write).p);
+    Register x = get_register(_tac_quadruple(write).p);
 
     _mips_iprintf("move $a0, %s", _reg_name(x));
-    _mips_iprintf("addi $sp, $sp, -4");
+    _mips_iprintf("addi $sp, $sp, -8");
     _mips_iprintf("sw $ra, 0($sp)");
+    _mips_iprintf("sw $a0, 4($sp)");
     _mips_iprintf("jal write");
     _mips_iprintf("lw $ra, 0($sp)");
-    _mips_iprintf("addi $sp, $sp, 4");
+    _mips_iprintf("lw $a0, 4($sp)");
+    _mips_iprintf("addi $sp, $sp, 8");
+    regs[x].dirty = FALSE;
     return write->next;
 }
 

@@ -23,7 +23,7 @@ struct RegDesc {    // the register descriptor
 
 struct VarDesc {    // the variable descriptor
     char var[8];
-    Register reg;
+    Register reg = fp;
     int offset; // the offset from stack
     /* add other fields as you need */
     struct VarDesc *next;
