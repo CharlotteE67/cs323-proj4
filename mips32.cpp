@@ -9,31 +9,11 @@ RegDesc regs[NUM_REGS];
 VarDesc *vars;
 
 map <string,VarDesc> varMap;//variable name -> offset/reg name 
+int offsetCnt = 0;
 
 #define _tac_kind(tac) (((tac)->code).kind)
 #define _tac_quadruple(tac) (((tac)->code).tac)
 #define _reg_name(reg) regs[reg].name
-
-
-
-Register get_register(tac_opd *opd){
-    assert(opd->kind == tac_opd::OP_VARIABLE);
-    char *var = opd->char_val;
-    /* COMPLETE the register allocation */
-    return t0;
-}
-
-Register get_register_w(tac_opd *opd){
-    assert(opd->kind == tac_opd::OP_VARIABLE);
-    char *var = opd->char_val;
-    /* COMPLETE the register allocation (for write) */
-    return s0;
-}
-
-void spill_register(Register reg){
-    /* COMPLETE the register spilling */
-}
-
 
 void _mips_printf(const char *fmt, ...){
     va_list args;
@@ -53,6 +33,66 @@ void _mips_iprintf(const char *fmt, ...){
 }
 
 
+Register get_register(tac_opd *opd){
+    assert(opd->kind == tac_opd::OP_VARIABLE);
+    string var = opd->char_val;
+    /* COMPLETE the register allocation */
+    struct VarDesc addr = varMap[var];
+
+    int regIndex = NUM_REGS;
+    for(int i = t0;i<=s0;i++){
+        if(regs[i].dirty==FALSE){
+            regIndex = i;
+            regs[i].dirty = TRUE;
+            memcpy(regs[i].var, var.c_str(), sizeof(regs[i].var));
+            break;
+        }
+    }  
+    _mips_iprintf("lw %s, -%d($fp)", _reg_name(regIndex), addr.offset);
+
+    return (Register)regIndex;
+
+}
+
+Register get_register_w(tac_opd *opd){
+    assert(opd->kind == tac_opd::OP_VARIABLE);
+    string var = opd->char_val;
+    /* COMPLETE the register allocation (for write) */
+    int regIndex = NUM_REGS;
+    for(int i = t0;i<=s0;i++){
+        if(regs[i].dirty==FALSE){
+            regIndex = i;
+            regs[i].dirty = TRUE;
+            memcpy(regs[i].var, var.c_str(), sizeof(regs[i].var));
+            break;
+        }
+    }  
+    return (Register)regIndex;
+}
+
+void spill_register(Register reg){
+    /* COMPLETE the register spilling */
+
+    if(varMap.count(regs[reg].var)==0){
+        struct VarDesc newVar;
+        newVar.offset = offsetCnt*4;
+        offsetCnt++;
+        varMap[regs[reg].var] = newVar;
+
+        _mips_iprintf("sw %s, -%d($fp)", _reg_name(reg), newVar.offset);
+        _mips_iprintf("addi $sp, $fp, -%d", newVar.offset);
+    }else{
+        _mips_iprintf("sw %s, -%d($fp)", _reg_name(reg), varMap[regs[reg].var].offset);
+    }
+
+    regs[reg].dirty = FALSE;
+
+}
+
+
+
+
+
 /* PARAM: a pointer to `struct tac_node` instance
    RETURN: the next instruction to be translated */
 tac *emit_label(tac *label){
@@ -62,6 +102,8 @@ tac *emit_label(tac *label){
 }
 
 tac *emit_function(tac *function){
+    varMap.clear();
+    offsetCnt = 0;
     _mips_printf("%s:", _tac_quadruple(function).funcname);
     return function->next;
 }
@@ -77,12 +119,14 @@ tac *emit_assign(tac *assign){
     else{
         y = get_register(_tac_quadruple(assign).right);
         _mips_iprintf("move %s, %s", _reg_name(x), _reg_name(y));
+        regs[y].dirty = FALSE;
     }
+    spill_register(x);
     return assign->next;
 }
 
 tac *emit_add(tac *add){
-    Register x, y, z;
+    Register x, y, z=(Register)0;
 
     x = get_register_w(_tac_quadruple(add).left);
     if(_tac_quadruple(add).r1->kind == tac_opd::OP_CONSTANT){
@@ -104,11 +148,14 @@ tac *emit_add(tac *add){
                                         _reg_name(y),
                                         _reg_name(z));
     }
+    spill_register(x);
+    regs[y].dirty = FALSE;
+    regs[z].dirty = FALSE;
     return add->next;
 }
 
 tac *emit_sub(tac *sub){
-    Register x, y, z;
+    Register x, y, z=(Register)0;
 
     x = get_register_w(_tac_quadruple(sub).left);
     if(_tac_quadruple(sub).r1->kind == tac_opd::OP_CONSTANT){
@@ -131,6 +178,9 @@ tac *emit_sub(tac *sub){
                                         _reg_name(y),
                                         _reg_name(z));
     }
+    spill_register(x);
+    regs[y].dirty = FALSE;
+    regs[z].dirty = FALSE;
     return sub->next;
 }
 
@@ -157,6 +207,9 @@ tac *emit_mul(tac *mul){
     _mips_iprintf("mul %s, %s, %s", _reg_name(x),
                                     _reg_name(y),
                                     _reg_name(z));
+    spill_register(x);
+    regs[y].dirty = FALSE;
+    regs[z].dirty = FALSE;
     return mul->next;
 }
 
@@ -182,6 +235,9 @@ tac *emit_div(tac *div){
     }
     _mips_iprintf("div %s, %s", _reg_name(y), _reg_name(z));
     _mips_iprintf("mflo %s", _reg_name(x));
+    spill_register(x);
+    regs[y].dirty = FALSE;
+    regs[z].dirty = FALSE;
     return div->next;
 }
 
@@ -191,6 +247,9 @@ tac *emit_addr(tac *addr){
     x = get_register_w(_tac_quadruple(addr).left);
     y = get_register(_tac_quadruple(addr).right);
     _mips_iprintf("move %s, %s", _reg_name(x), _reg_name(y));
+    spill_register(x);
+    regs[y].dirty = FALSE;
+   
     return addr->next;
 }
 
@@ -200,6 +259,8 @@ tac *emit_fetch(tac *fetch){
     x = get_register_w(_tac_quadruple(fetch).left);
     y = get_register(_tac_quadruple(fetch).raddr);
     _mips_iprintf("lw %s, 0(%s)", _reg_name(x), _reg_name(y));
+    spill_register(x);
+    regs[y].dirty = FALSE;
     return fetch->next;
 }
 
@@ -209,6 +270,9 @@ tac *emit_deref(tac *deref){
     x = get_register(_tac_quadruple(deref).laddr);
     y = get_register(_tac_quadruple(deref).right);
     _mips_iprintf("sw %s, 0(%s)", _reg_name(y), _reg_name(x));
+
+    regs[y].dirty = FALSE;
+    regs[x].dirty = FALSE;
     return deref->next;
 }
 
@@ -273,7 +337,7 @@ tac *emit_param(tac *param){
 }
 
 tac *emit_read(tac *read){
-    Register x = get_register(_tac_quadruple(read).p);
+    Register x = get_register_w(_tac_quadruple(read).p);
 
     _mips_iprintf("addi $sp, $sp, -4");
     _mips_iprintf("sw $ra, 0($sp)");
@@ -281,6 +345,9 @@ tac *emit_read(tac *read){
     _mips_iprintf("lw $ra, 0($sp)");
     _mips_iprintf("addi $sp, $sp, 4");
     _mips_iprintf("move %s, $v0", _reg_name(x));
+    
+    spill_register(x);
+   
     return read->next;
 }
 
