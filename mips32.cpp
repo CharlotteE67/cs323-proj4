@@ -284,8 +284,21 @@ tac *emit_goto(tac *goto_){
 }
 
 tac *emit_iflt(tac *iflt){
-    Register x = get_register(_tac_quadruple(iflt).c1);
-    Register y = get_register(_tac_quadruple(iflt).c2);
+    Register x, y;
+    if(_tac_quadruple(iflt).c1->kind == tac_opd::OP_CONSTANT){
+        x = get_register_w(_tac_quadruple(iflt).c1);
+        _mips_iprintf("li %s, %d", _reg_name(x),
+                                   _tac_quadruple(iflt).c1->int_val);
+    }else{
+        x = get_register(_tac_quadruple(iflt).c1);
+    }
+    if(_tac_quadruple(iflt).c2->kind == tac_opd::OP_CONSTANT){
+        y = get_register_w(_tac_quadruple(iflt).c2);
+        _mips_iprintf("li %s, %d", _reg_name(y),
+                                   _tac_quadruple(iflt).c2->int_val);
+    }else{
+        y = get_register(_tac_quadruple(iflt).c2);
+    }
     // blt x, y, labelz
     _mips_iprintf("blt %s, %s, label%d", _reg_name(x), _reg_name(y), _tac_quadruple(iflt).labelno->int_val);
     regs[x].dirty = FALSE;
@@ -294,8 +307,21 @@ tac *emit_iflt(tac *iflt){
 }
 
 tac *emit_ifle(tac *ifle){
-    Register x = get_register(_tac_quadruple(ifle).c1);
-    Register y = get_register(_tac_quadruple(ifle).c2);
+    Register x, y;
+    if(_tac_quadruple(ifle).c1->kind == tac_opd::OP_CONSTANT){
+        x = get_register_w(_tac_quadruple(ifle).c1);
+        _mips_iprintf("li %s, %d", _reg_name(x),
+                                   _tac_quadruple(ifle).c1->int_val);
+    }else{
+        x = get_register(_tac_quadruple(ifle).c1);
+    }
+    if(_tac_quadruple(ifle).c2->kind == tac_opd::OP_CONSTANT){
+        y = get_register_w(_tac_quadruple(ifle).c2);
+        _mips_iprintf("li %s, %d", _reg_name(y),
+                                   _tac_quadruple(ifle).c2->int_val);
+    }else{
+        y = get_register(_tac_quadruple(ifle).c2);
+    }
     // ble x, y, labelz
     _mips_iprintf("ble %s, %s, label%d", _reg_name(x), _reg_name(y), _tac_quadruple(ifle).labelno->int_val);
     regs[x].dirty = FALSE;
@@ -304,8 +330,21 @@ tac *emit_ifle(tac *ifle){
 }
 
 tac *emit_ifgt(tac *ifgt){
-    Register x = get_register(_tac_quadruple(ifgt).c1);
-    Register y = get_register(_tac_quadruple(ifgt).c2);
+    Register x, y;
+    if(_tac_quadruple(ifgt).c1->kind == tac_opd::OP_CONSTANT){
+        x = get_register_w(_tac_quadruple(ifgt).c1);
+        _mips_iprintf("li %s, %d", _reg_name(x),
+                                   _tac_quadruple(ifgt).c1->int_val);
+    }else{
+        x = get_register(_tac_quadruple(ifgt).c1);
+    }
+    if(_tac_quadruple(ifgt).c2->kind == tac_opd::OP_CONSTANT){
+        y = get_register_w(_tac_quadruple(ifgt).c2);
+        _mips_iprintf("li %s, %d", _reg_name(y),
+                                   _tac_quadruple(ifgt).c2->int_val);
+    }else{
+        y = get_register(_tac_quadruple(ifgt).c2);
+    }
     // bgt x, y, labelz
     _mips_iprintf("bgt %s, %s, label%d", _reg_name(x), _reg_name(y), _tac_quadruple(ifgt).labelno->int_val);
     regs[x].dirty = FALSE;
@@ -314,8 +353,21 @@ tac *emit_ifgt(tac *ifgt){
 }
 
 tac *emit_ifge(tac *ifge){
-    Register x = get_register(_tac_quadruple(ifge).c1);
-    Register y = get_register(_tac_quadruple(ifge).c2);
+    Register x, y;
+    if(_tac_quadruple(ifge).c1->kind == tac_opd::OP_CONSTANT){
+        x = get_register_w(_tac_quadruple(ifge).c1);
+        _mips_iprintf("li %s, %d", _reg_name(x),
+                                   _tac_quadruple(ifge).c1->int_val);
+    }else{
+        x = get_register(_tac_quadruple(ifge).c1);
+    }
+    if(_tac_quadruple(ifge).c2->kind == tac_opd::OP_CONSTANT){
+        y = get_register_w(_tac_quadruple(ifge).c2);
+        _mips_iprintf("li %s, %d", _reg_name(y),
+                                   _tac_quadruple(ifge).c2->int_val);
+    }else{
+        y = get_register(_tac_quadruple(ifge).c2);
+    }
     // bge x, y, labelz
     _mips_iprintf("bge %s, %s, label%d", _reg_name(x), _reg_name(y), _tac_quadruple(ifge).labelno->int_val);
     regs[x].dirty = FALSE;
@@ -324,8 +376,21 @@ tac *emit_ifge(tac *ifge){
 }
 
 tac *emit_ifne(tac *ifne){
-    Register x = get_register(_tac_quadruple(ifne).c1);
-    Register y = get_register(_tac_quadruple(ifne).c2);
+    Register x, y;
+    if(_tac_quadruple(ifne).c1->kind == tac_opd::OP_CONSTANT){
+        x = get_register_w(_tac_quadruple(ifne).c1);
+        _mips_iprintf("li %s, %d", _reg_name(x),
+                                   _tac_quadruple(ifne).c1->int_val);
+    }else{
+        x = get_register(_tac_quadruple(ifne).c1);
+    }
+    if(_tac_quadruple(ifne).c2->kind == tac_opd::OP_CONSTANT){
+        y = get_register_w(_tac_quadruple(ifne).c2);
+        _mips_iprintf("li %s, %d", _reg_name(y),
+                                   _tac_quadruple(ifne).c2->int_val);
+    }else{
+        y = get_register(_tac_quadruple(ifne).c2);
+    }
     // bne x, y, labelz
     _mips_iprintf("bne %s, %s, label%d", _reg_name(x), _reg_name(y), _tac_quadruple(ifne).labelno->int_val);
     regs[x].dirty = FALSE;
@@ -334,8 +399,21 @@ tac *emit_ifne(tac *ifne){
 }
 
 tac *emit_ifeq(tac *ifeq){
-    Register x = get_register(_tac_quadruple(ifeq).c1);
-    Register y = get_register(_tac_quadruple(ifeq).c2);
+    Register x, y;
+    if(_tac_quadruple(ifeq).c1->kind == tac_opd::OP_CONSTANT){
+        x = get_register_w(_tac_quadruple(ifeq).c1);
+        _mips_iprintf("li %s, %d", _reg_name(x),
+                                   _tac_quadruple(ifeq).c1->int_val);
+    }else{
+        x = get_register(_tac_quadruple(ifeq).c1);
+    }
+    if(_tac_quadruple(ifeq).c2->kind == tac_opd::OP_CONSTANT){
+        y = get_register_w(_tac_quadruple(ifeq).c2);
+        _mips_iprintf("li %s, %d", _reg_name(y),
+                                   _tac_quadruple(ifeq).c2->int_val);
+    }else{
+        y = get_register(_tac_quadruple(ifeq).c2);
+    }
     // beq x, y, labelz
     _mips_iprintf("beq %s, %s, label%d", _reg_name(x), _reg_name(y), _tac_quadruple(ifeq).labelno->int_val);
     regs[x].dirty = FALSE;
