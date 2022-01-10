@@ -444,7 +444,15 @@ tac *emit_arg(tac *arg){
     _mips_iprintf("sw $fp, 4($sp)");
     _mips_iprintf("sw $ra, 0($sp)");
 
-    for (int i = a0; arg->code.kind == _tac_inst::ARG; arg = arg->next, ++i) {
+    int cnt = a0;
+    tac *p = arg;
+    for (cnt = a0; arg->code.kind == _tac_inst::ARG; arg = arg->next, ++cnt) {
+    }
+
+    --cnt;
+    arg = p;
+
+    for (int i = cnt; arg->code.kind == _tac_inst::ARG; arg = arg->next, --i) {
         Register reg = get_register(_tac_quadruple(arg).var);
         _mips_iprintf("move %s, %s", regs[i].name, _reg_name(reg));
         regs[reg].dirty = FALSE;
