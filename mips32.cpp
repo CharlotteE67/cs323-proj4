@@ -1,6 +1,8 @@
 #include "mips32.h"
 #include <map>
 #include <string>
+#include <cstring>
+#include <iostream>
 /* the output file descriptor, may not be explicitly used */
 using namespace std;
 FILE *fd;
@@ -9,6 +11,7 @@ RegDesc regs[NUM_REGS];
 VarDesc *vars;
 
 map <string,VarDesc> varMap;//variable name -> offset/reg name 
+int arg_num;
 int offsetCnt = 0;
 
 #define _tac_kind(tac) (((tac)->code).kind)
@@ -44,11 +47,11 @@ Register get_register(tac_opd *opd){
         if(regs[i].dirty==FALSE){
             regIndex = i;
             regs[i].dirty = TRUE;
-            memcpy(regs[i].var, var.c_str(), sizeof(regs[i].var));
+            strcpy(regs[i].var, var.c_str());
             break;
         }
-    }  
-    _mips_iprintf("lw %s, -%d($fp)", _reg_name(regIndex), addr.offset);
+    }
+    _mips_iprintf("lw %s, -%d($fp)", _reg_name((Register) regIndex), addr.offset);
 
     return (Register)regIndex;
 
@@ -63,7 +66,7 @@ Register get_register_w(tac_opd *opd){
         if(regs[i].dirty==FALSE){
             regIndex = i;
             regs[i].dirty = TRUE;
-            memcpy(regs[i].var, var.c_str(), sizeof(regs[i].var));
+            strcpy(regs[i].var, var.c_str());
             break;
         }
     }  
@@ -90,9 +93,6 @@ void spill_register(Register reg){
 }
 
 
-
-
-
 /* PARAM: a pointer to `struct tac_node` instance
    RETURN: the next instruction to be translated */
 tac *emit_label(tac *label){
@@ -104,7 +104,9 @@ tac *emit_label(tac *label){
 tac *emit_function(tac *function){
     varMap.clear();
     offsetCnt = 0;
+    arg_num = 0;
     _mips_printf("%s:", _tac_quadruple(function).funcname);
+    _mips_iprintf("move $fp, $sp");
     return function->next;
 }
 
@@ -313,6 +315,8 @@ tac *emit_ifeq(tac *ifeq){
 
 tac *emit_return(tac *return_){
     /* COMPLETE emit function */
+    _mips_iprintf("move $sp, $fp");
+    _mips_iprintf("jr $ra");
     return return_->next;
 }
 
@@ -323,17 +327,51 @@ tac *emit_dec(tac *dec){
 
 tac *emit_arg(tac *arg){
     /* COMPLETE emit function */
-    return arg->next;
+    _mips_iprintf("addi $sp, $sp, -%d", (arg_num + 2) * 4);
+    for (int i = 0; i < arg_num; ++i) {
+        _mips_iprintf("sw $a%d, %d($sp)", i, (arg_num + 1 - i) * 4);
+    }
+    _mips_iprintf("sw $fp, 4($sp)");
+    _mips_iprintf("sw $ra, 0($sp)");
+
+    for (int i = a0; arg->code.kind == _tac_inst::ARG; arg = arg->next, ++i) {
+        Register reg = get_register(_tac_quadruple(arg).var);
+        _mips_iprintf("move %s, %s", regs[i].name, _reg_name(reg));
+        regs[reg].dirty = FALSE;
+    }
+
+    return arg;
 }
 
 tac *emit_call(tac *call){
     /* COMPLETE emit function */
+
+    _mips_iprintf("jal %s", _tac_quadruple(call).funcname);
+
+    for (int i = 0; i < arg_num; ++i) {
+        _mips_iprintf("lw $a%d, %d($sp)", i, (arg_num + 1 - i) * 4);
+    }
+    _mips_iprintf("lw $fp, 4($sp)");
+    _mips_iprintf("lw $ra, 0($sp)");
+    _mips_iprintf("addi $sp, $sp, %d", (arg_num + 2) * 4);
+
+    Register x = get_register_w(_tac_quadruple(call).ret);
+    _mips_iprintf("move %s, $v0", _reg_name(x));
+    spill_register(x);
     return call->next;
 }
 
 tac *emit_param(tac *param){
     /* COMPLETE emit function */
-    return param->next;
+    while (param->code.kind == _tac_inst::PARAM) {
+        VarDesc vd = {};
+        strcpy(vd.var, _tac_quadruple(param).p->char_val);
+        vd.reg = Register(arg_num + a0);
+        varMap[_tac_quadruple(param).p->char_val] = vd;
+        ++ arg_num;
+        param = param->next;
+    }
+    return param;
 }
 
 tac *emit_read(tac *read){

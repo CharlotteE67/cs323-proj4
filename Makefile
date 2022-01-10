@@ -1,4 +1,4 @@
-CC=gcc
+CC=g++
 BIN=bin
 SRC=main.cpp tac.cpp mips32.cpp
 
